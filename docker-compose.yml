@@ -1,0 +1,29 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: flairtimermodbot-app:dev
+    container_name: mch-flairtimermodbot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./docker-config:/app/config
+      - ./docker-DB:/app/DB
+
+  webapp:
+    build:
+      context: .
+      dockerfile: Dockerfile.webapp
+    image: flairtimermodbot-web:dev
+    container_name: mch-flairtimermodbot-web
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./docker-config:/app/config
+    ports:
+      - "${FTMB_WEB_PORT:-5000}:${FTMB_WEB_PORT:-5000}"
+    depends_on:
+      - app

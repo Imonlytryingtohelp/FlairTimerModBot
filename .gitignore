@@ -1,0 +1,36 @@
+# Environment variables
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Bot data
+config/posts.json
+docker-config/
+docker-DB/
+
+# OS
+.DS_Store
+Thumbs.db
+.env.example
+docker-config/config.py
+docker-config/posts.json
+docker-DB/chat_reload_requests.txt
+
+docker-config/
+docker-DB/

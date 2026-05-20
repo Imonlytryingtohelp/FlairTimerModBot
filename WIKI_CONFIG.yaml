@@ -1,0 +1,39 @@
+- flair_text: "Waiting for OP"
+  hours: 48
+  action: "comment"
+  comment_message: "Hello OP! It has been at least __2 days__ since you last replied to your post. \n\n Please update your post in one of the following ways; \n\n * Reply to any relevant comments you haven't replied to yet. \n * [Mark your post solved](https://www.reddit.com/r/MinecraftHelp/wiki/rules/#wiki_7._points_sytem_rules), if your issue is fixed.\n\n \n __If you do not update your post within *7 days* you may receive a short ban.__ \n\n _Please note: Deleting this post, without marking it solved, is against [our rules](https://www.reddit.com/r/MinecraftHelp/wiki/rules/#wiki_7._points_sytem_rules)._ \n\n --- \n\n ^I ^am ^a ^bot ^and ^this ^account ^is ^not ^monitored. ^Please ^contact ^the ^mods ^if ^you ^have ^any ^questions."
+  messagetitle: "Modmail Notification"
+  lock_post: false
+  distinguish_sticky: false
+
+- flair_text: "Solved"
+  hours: 1
+  action: "comment"
+  comment_message: "__This post has been marked solved and comments locked__. \n\n OP, if you need to reopen this post please [message the mod team](https://reddit.com/message/compose/?to=%2Fr%2FMinecraftHelp). \n\n --- \n\n ^I ^am ^a ^bot ^and ^this ^account ^is ^not ^monitored. ^Please ^contact ^the ^mods ^if ^you ^have ^any ^questions."
+  messagetitle: "Modmail Notification"
+  lock_post: true
+  distinguish_sticky: true
+
+- flair_text: "WFOP"
+  hours: 192
+  action: "modmail"
+  comment_message: "Dummy comment"
+  messagetitle: "Possible Abandoned Post"
+  lock_post: false
+  distinguish_sticky: false
+
+- flair_text: "Waiting For Solve"
+  hours: 24
+  action: "modmail"
+  comment_message: "Dummy comment"
+  messagetitle: "Mark Post Solved"
+  lock_post: false
+  distinguish_sticky: false
+
+- flair_text: "Pending"
+  hours: 0.1
+  action: "modmail"
+  comment_message: "Dummy comment"
+  messagetitle: "Confirm OP Solve"
+  lock_post: false
+  distinguish_sticky: false

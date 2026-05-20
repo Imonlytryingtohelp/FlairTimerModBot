@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlairTimerModBot{% if subreddit %} — r/{{ subreddit }}{% endif %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    body {
+      background-color: #0f172a;
+      color: #e2e8f0;
+    }
+    .navbar {
+      background-color: #1e293b !important;
+      border-bottom: 1px solid #334155 !important;
+    }
+    .card {
+      background-color: #1e293b;
+      border-color: #334155;
+    }
+    .card.border-primary { border-color: #3b82f6 !important; }
+    .card.border-success { border-color: #22c55e !important; }
+    .card.border-danger  { border-color: #ef4444 !important; }
+    .card.border-warning { border-color: #f59e0b !important; }
+    .card.border-info    { border-color: #38bdf8 !important; }
+    .table-dark {
+      --bs-table-bg: transparent;
+      --bs-table-hover-bg: rgba(255,255,255,0.04);
+      --bs-table-border-color: #334155;
+    }
+    .table thead th {
+      background-color: #0f172a;
+      border-bottom: 1px solid #334155;
+      color: #94a3b8;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+    th.sortable:hover {
+      color: #e2e8f0;
+    }
+    th.sort-active {
+      color: #38bdf8 !important;
+    }
+    .form-control, .form-select {
+      background-color: #0f172a !important;
+      border-color: #334155 !important;
+      color: #e2e8f0 !important;
+    }
+    .form-control:focus, .form-select:focus {
+      border-color: #3b82f6 !important;
+      box-shadow: 0 0 0 0.2rem rgba(59,130,246,0.2) !important;
+    }
+    .form-control::placeholder {
+      color: #64748b;
+    }
+    .card-header {
+      background-color: #0f172a;
+      border-bottom: 1px solid #334155;
+    }
+    .stat-icon {
+      font-size: 2rem;
+      opacity: 0.35;
+    }
+    .stat-value {
+      font-size: 2.25rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+    .table td {
+      vertical-align: middle;
+      padding: 0.6rem 0.75rem;
+      border-color: #1e293b;
+    }
+    .post-link {
+      color: #93c5fd;
+      text-decoration: none;
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+    .post-link:hover {
+      color: #bfdbfe;
+      text-decoration: underline;
+    }
+    .time-overdue { color: #f87171; font-weight: 700; }
+    .time-warning { color: #fbbf24; font-weight: 600; }
+    .time-caution { color: #fde68a; }
+    .time-ok      { color: #86efac; }
+    .spinner-border-sm { width: 1rem; height: 1rem; }
+    #error-banner { display: none; }
+    .badge-action-comment { background-color: #0891b2; }
+    .badge-action-modmail { background-color: #7c3aed; }
+    .badge-action-both    { background-color: #0f766e; }
+    .source-banner {
+      border-radius: 0.375rem;
+    }
+    .source-cache {
+      background-color: rgba(34,197,94,0.1);
+      border: 1px solid rgba(34,197,94,0.3);
+      color: #86efac;
+    }
+    .source-fallback {
+      background-color: rgba(245,158,11,0.12);
+      border: 1px solid rgba(245,158,11,0.35);
+      color: #fcd34d;
+    }
+    .source-none {
+      background-color: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.35);
+      color: #fca5a5;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark">
+  <div class="container-fluid px-4">
+    <span class="navbar-brand fw-bold">
+      <i class="bi bi-clock-history me-2 text-primary"></i>FlairTimerModBot
+      {% if subreddit %}
+      <span class="badge bg-secondary ms-2 fw-normal">r/{{ subreddit }}</span>
+      {% endif %}
+    </span>
+    <div class="d-flex align-items-center gap-3">
+      <span class="text-muted small d-none d-md-inline" id="last-refresh-label">—</span>
+      <button class="btn btn-sm btn-outline-primary" id="refresh-btn" onclick="loadData()">
+        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+      </button>
+      {% if user %}
+        <span class="text-light small ms-3">Logged in as <b>{{ user.name }}</b></span>
+        <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-danger ms-2">Logout</a>
+      {% else %}
+        <a href="{{ url_for('login') }}" class="btn btn-sm btn-outline-success ms-2">Login with Reddit</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid py-4 px-4">
+
+  <!-- Config source indicator (populated dynamically after stats load) -->
+  <div id="config-source-banner" class="source-banner px-3 py-2 mb-4 small" style="display:none"></div>
+
+  <!-- Error banner -->
+  <div class="alert alert-danger align-items-center mb-4" id="error-banner" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <span id="error-message">Failed to load data.</span>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3">
+      <div class="card border-primary h-100">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="stat-label">Tracking</div>
+              <div class="stat-value text-primary mt-1" id="stat-tracking">—</div>
+            </div>
+            <i class="bi bi-clock stat-icon text-primary"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="card border-success h-100">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="stat-label">Processed</div>
+              <div class="stat-value text-success mt-1" id="stat-processed">—</div>
+            </div>
+            <i class="bi bi-check-circle stat-icon text-success"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="card border-danger h-100">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="stat-label">Overdue</div>
+              <div class="stat-value text-danger mt-1" id="stat-overdue">—</div>
+            </div>
+            <i class="bi bi-exclamation-circle stat-icon text-danger"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-xl-3">
+      <div class="card border-info h-100">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <div class="stat-label">Active Flairs</div>
+              <div class="stat-value text-info mt-1" id="stat-flairs">—</div>
+            </div>
+            <i class="bi bi-tags stat-icon text-info"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card mb-4">
+    <div class="card-body py-3">
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-md-4">
+          <label class="form-label stat-label mb-1">Flair</label>
+          <select class="form-select form-select-sm" id="filter-flair">
+            <option value="">All flairs</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label stat-label mb-1">Search Post ID</label>
+          <input
+            type="text"
+            class="form-control form-control-sm"
+            id="filter-id"
+            placeholder="e.g. 1rqd9aw"
+            autocomplete="off"
+            spellcheck="false"
+          >
+        </div>
+        <div class="col-8 col-md-3">
+          <label class="form-label stat-label mb-1">Status</label>
+          <select class="form-select form-select-sm" id="filter-status">
+            <option value="">All statuses</option>
+            <option value="tracking">Tracking</option>
+            <option value="processed">Processed</option>
+          </select>
+        </div>
+        <div class="col-4 col-md-1">
+          <button class="btn btn-sm btn-outline-secondary w-100" onclick="clearFilters()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Posts Table -->
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center py-2">
+      <span class="text-muted small" id="table-count">Loading…</span>
+      <span class="text-muted small">
+        Auto-refresh in <span id="refresh-countdown" class="text-light fw-bold">30</span>s
+      </span>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-dark table-hover mb-0">
+        <thead>
+          <tr>
+            <th class="sortable" data-col="id">Post ID</th>
+            <th class="sortable" data-col="flair">Flair</th>
+            <th class="sortable" data-col="start_time">Tracking Since</th>
+            <th class="sortable" data-col="trigger_time">Trigger At</th>
+            <th class="sortable" data-col="seconds_remaining">
+              Time Remaining <i class="bi bi-arrow-up small sort-active" id="sort-indicator"></i>
+            </th>
+            <th>Bot Action</th>
+            <th class="sortable" data-col="status">Status</th>
+          </tr>
+        </thead>
+        <tbody id="posts-tbody">
+          <tr>
+            <td colspan="7" class="text-center text-muted py-5">
+              <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+              Loading posts…
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let allPosts   = [];
+  let sortCol    = 'seconds_remaining';
+  let sortAsc    = true;
+  let countdownTimer = null;
+  let countdown  = 30;
+  const SUBREDDIT = {{ subreddit | tojson }};
+  const FILTER_STORAGE_KEY = 'ftmb.dashboard.filters.v1';
+
+  function saveFiltersToStorage() {
+    const payload = {
+      flair: document.getElementById('filter-flair').value,
+      id: document.getElementById('filter-id').value,
+      status: document.getElementById('filter-status').value,
+    };
+    try {
+      localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(payload));
+    } catch (e) {
+      // Ignore storage quota/private mode errors; dashboard still functions normally.
+    }
+  }
+
+  function loadFiltersFromStorage() {
+    try {
+      const raw = localStorage.getItem(FILTER_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        const flairEl = document.getElementById('filter-flair');
+        flairEl.value = parsed.flair ?? '';
+        flairEl.dataset.savedFlair = parsed.flair ?? '';
+        document.getElementById('filter-id').value = parsed.id ?? '';
+        document.getElementById('filter-status').value = parsed.status ?? '';
+      }
+    } catch (e) {
+      // Corrupt or invalid stored values should not break page load.
+    }
+  }
+
+  // ── Data fetching ──────────────────────────────────────────────────────────
+  async function fetchApiData() {
+    const [statsRes, postsRes, flairsRes] = await Promise.all([
+      fetch('/api/stats'),
+      fetch('/api/posts'),
+      fetch('/api/flairs'),
+    ]);
+
+    if (!statsRes.ok || !postsRes.ok || !flairsRes.ok) {
+      throw new Error(`API status: stats=${statsRes.status}, posts=${postsRes.status}, flairs=${flairsRes.status}`);
+    }
+
+    const stats  = await statsRes.json();
+    const posts  = await postsRes.json();
+    const flairs = await flairsRes.json();
+    return { stats, posts, flairs };
+  }
+
+  async function loadData() {
+    clearTimeout(countdownTimer);
+    setRefreshBtnLoading(true);
+    hideError();
+
+    try {
+      let stats, posts, flairs;
+      try {
+        ({ stats, posts, flairs } = await fetchApiData());
+      } catch (firstErr) {
+        // One quick retry prevents transient network hiccups from flashing a hard error.
+        await new Promise(resolve => setTimeout(resolve, 400));
+        ({ stats, posts, flairs } = await fetchApiData());
+      }
+
+      allPosts = posts;
+
+      if (!stats.posts_file_exists) {
+        showError('posts.json not found — the bot may not have run yet or the path is misconfigured.');
+      }
+
+      updateStats(stats);
+      populateFlairFilter(flairs);
+      renderTable();
+
+      const now = new Date();
+      document.getElementById('last-refresh-label').textContent =
+        `Refreshed at ${now.toLocaleTimeString()}`;
+    } catch (e) {
+      if (allPosts.length > 0) {
+        // Keep the UI usable with stale data and avoid a noisy hard-fail banner.
+        hideError();
+        document.getElementById('last-refresh-label').textContent =
+          'Live refresh failed, showing last successful data';
+      } else {
+        showError(`Failed to load data: ${e.message}`);
+      }
+      console.error(e);
+    } finally {
+      setRefreshBtnLoading(false);
+    }
+
+    startCountdown();
+  }
+
+  function startCountdown() {
+    countdown = 30;
+    updateCountdownDisplay();
+    const tick = () => {
+      countdown--;
+      updateCountdownDisplay();
+      if (countdown <= 0) {
+        loadData();
+      } else {
+        countdownTimer = setTimeout(tick, 1000);
+      }
+    };
+    countdownTimer = setTimeout(tick, 1000);
+  }
+
+  function updateCountdownDisplay() {
+    document.getElementById('refresh-countdown').textContent = countdown;
+  }
+
+  // ── Stats cards ────────────────────────────────────────────────────────────
+  function updateStats(stats) {
+    document.getElementById('stat-tracking').textContent  = stats.total_tracking  ?? '—';
+    document.getElementById('stat-processed').textContent = stats.total_processed ?? '—';
+    document.getElementById('stat-overdue').textContent   = stats.total_overdue   ?? '—';
+    document.getElementById('stat-flairs').textContent    = stats.active_flairs   ?? '—';
+
+    // Config source banner
+    const banner = document.getElementById('config-source-banner');
+    banner.className = 'source-banner px-3 py-2 mb-4 small';
+    const src = stats.config_source;
+    if (src === 'cache') {
+      banner.classList.add('source-cache');
+      banner.innerHTML = '<i class="bi bi-check-circle me-2"></i>Timer configuration loaded from <strong>live bot cache</strong> — values shown are exactly what the bot is currently using.';
+    } else if (src === 'flairconfig.py') {
+      banner.classList.add('source-fallback');
+      banner.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Bot cache not found — using <code>flairconfig.py</code> as fallback. Start the bot at least once to generate the cache. Timer hours shown may not match the live wiki config.';
+    } else {
+      banner.classList.add('source-none');
+      banner.innerHTML = '<i class="bi bi-x-circle me-2"></i>No flair config found. Timer hours and trigger times cannot be calculated.';
+    }
+    banner.style.display = '';
+  }
+
+  // ── Flair filter dropdown ─────────────────────────────────────────────────
+  function populateFlairFilter(flairs) {
+    const sel = document.getElementById('filter-flair');
+    const current = sel.value || sel.dataset.savedFlair || '';
+    sel.innerHTML = '<option value="">All flairs</option>';
+    flairs.forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f;
+      opt.textContent = f;
+      if (f === current) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.dataset.savedFlair = '';
+  }
+
+  // ── Filtering ──────────────────────────────────────────────────────────────
+  function getFiltered() {
+    const flairFilter  = document.getElementById('filter-flair').value;
+    const idFilter     = document.getElementById('filter-id').value.trim().toLowerCase();
+    const statusFilter = document.getElementById('filter-status').value;
+
+    return allPosts.filter(p => {
+      if (flairFilter  && p.flair !== flairFilter)                      return false;
+      if (idFilter     && !p.id.toLowerCase().includes(idFilter))       return false;
+      if (statusFilter && p.status !== statusFilter)                    return false;
+      return true;
+    });
+  }
+
+  function clearFilters() {
+    document.getElementById('filter-flair').value  = '';
+    document.getElementById('filter-id').value     = '';
+    document.getElementById('filter-status').value = '';
+    saveFiltersToStorage();
+    renderTable();
+  }
+
+  // ── Sorting ────────────────────────────────────────────────────────────────
+  function sortPosts(posts) {
+    return posts.slice().sort((a, b) => {
+      let va = a[sortCol];
+      let vb = b[sortCol];
+
+      // Nulls always go to the bottom regardless of sort direction
+      if (va === null || va === undefined) return 1;
+      if (vb === null || vb === undefined) return -1;
+
+      if (typeof va === 'string') {
+        va = va.toLowerCase();
+        vb = vb.toLowerCase();
+      }
+
+      const cmp = va < vb ? -1 : va > vb ? 1 : 0;
+      return sortAsc ? cmp : -cmp;
+    });
+  }
+
+  // ── Formatting helpers ─────────────────────────────────────────────────────
+  function esc(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function fmtDateTime(ts) {
+    if (ts === null || ts === undefined) return '—';
+    return new Date(ts * 1000).toLocaleString(undefined, {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+  }
+
+  function fmtDuration(secs) {
+    if (secs === null || secs === undefined) return null;
+    const sign = secs < 0 ? '-' : '';
+    const abs  = Math.abs(secs);
+    const d    = Math.floor(abs / 86400);
+    const h    = Math.floor((abs % 86400) / 3600);
+    const m    = Math.floor((abs % 3600) / 60);
+    if (d > 0) return `${sign}${d}d ${h}h ${m}m`;
+    return `${sign}${h}h ${m}m`;
+  }
+
+  function timeRemainingCell(secs, status) {
+    if (status === 'processed') {
+      return '<span class="badge bg-success"><i class="bi bi-check-lg me-1"></i>Actioned</span>';
+    }
+    if (secs === null || secs === undefined) {
+      return '<span class="text-muted small">N/A (wiki config)</span>';
+    }
+    const str = fmtDuration(secs);
+    if (secs < 0) {
+      return `<span class="badge bg-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Overdue ${str}</span>`;
+    }
+    if (secs < 3600)  return `<span class="time-warning"><i class="bi bi-alarm me-1"></i>${str}</span>`;
+    if (secs < 21600) return `<span class="time-caution">${str}</span>`;
+    return `<span class="time-ok">${str}</span>`;
+  }
+
+  function statusBadge(status) {
+    if (status === 'tracking')  return '<span class="badge bg-primary">Tracking</span>';
+    if (status === 'processed') return '<span class="badge bg-success">Processed</span>';
+    return `<span class="badge bg-secondary">${esc(status)}</span>`;
+  }
+
+  function actionBadge(action) {
+    if (!action) return '<span class="text-muted small">—</span>';
+    const map = {
+      comment: ['badge-action-comment', 'bi-chat-left-text', 'Comment'],
+      modmail: ['badge-action-modmail', 'bi-envelope',       'Modmail'],
+      both:    ['badge-action-both',    'bi-collection',     'Both'],
+    };
+    const [cls, icon, label] = map[action] ?? ['bg-secondary', 'bi-question', action];
+    return `<span class="badge ${cls}"><i class="bi ${icon} me-1"></i>${label}</span>`;
+  }
+
+  function flairBadge(flair) {
+    return `<span class="badge text-bg-secondary fw-normal">${esc(flair)}</span>`;
+  }
+
+  function postLink(id) {
+    const href = SUBREDDIT
+      ? `https://www.reddit.com/r/${SUBREDDIT}/comments/${esc(id)}/`
+      : `https://redd.it/${esc(id)}`;
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="post-link">${esc(id)}<i class="bi bi-box-arrow-up-right ms-1 small opacity-50"></i></a>`;
+  }
+
+  // ── Table rendering ────────────────────────────────────────────────────────
+  function renderTable() {
+    const filtered = getFiltered();
+    const sorted   = sortPosts(filtered);
+    const tbody    = document.getElementById('posts-tbody');
+
+    document.getElementById('table-count').textContent =
+      `Showing ${sorted.length.toLocaleString()} of ${allPosts.length.toLocaleString()} posts`;
+
+    if (sorted.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="text-center text-muted py-5">
+            <i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>
+            No posts match the current filters.
+          </td>
+        </tr>`;
+      return;
+    }
+
+    tbody.innerHTML = sorted.map(p => `
+      <tr>
+        <td>${postLink(p.id)}</td>
+        <td>${flairBadge(p.flair)}</td>
+        <td class="text-muted small">${fmtDateTime(p.start_time)}</td>
+        <td class="text-muted small">${fmtDateTime(p.trigger_time)}</td>
+        <td>${timeRemainingCell(p.seconds_remaining, p.status)}</td>
+        <td>${actionBadge(p.action)}</td>
+        <td>${statusBadge(p.status)}</td>
+      </tr>`).join('');
+  }
+
+  // ── Sortable column headers ────────────────────────────────────────────────
+  document.querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      if (sortCol === col) {
+        sortAsc = !sortAsc;
+      } else {
+        sortCol = col;
+        // Default: time fields sort ascending, strings sort ascending
+        sortAsc = true;
+      }
+      updateSortIndicators();
+      renderTable();
+    });
+  });
+
+  function updateSortIndicators() {
+    document.querySelectorAll('th.sortable').forEach(th => {
+      th.classList.remove('sort-active');
+    });
+    const activeTh = document.querySelector(`th[data-col="${sortCol}"]`);
+    if (activeTh) activeTh.classList.add('sort-active');
+
+    // Update the arrow icon
+    const indicator = document.getElementById('sort-indicator');
+    indicator.className = `bi ${sortAsc ? 'bi-arrow-up' : 'bi-arrow-down'} small sort-active`;
+
+    // Move indicator to active header
+    if (activeTh && indicator.parentElement !== activeTh) {
+      document.querySelectorAll('th.sortable .sort-indicator-icon').forEach(i => i.remove());
+      const icon = document.createElement('i');
+      icon.className = `bi ${sortAsc ? 'bi-arrow-up' : 'bi-arrow-down'} small sort-active sort-indicator-icon ms-1`;
+      activeTh.appendChild(icon);
+    }
+  }
+
+  // ── Error/UI helpers ───────────────────────────────────────────────────────
+  function showError(msg) {
+    document.getElementById('error-message').textContent = msg;
+    document.getElementById('error-banner').style.display = '';
+  }
+
+  function hideError() {
+    document.getElementById('error-banner').style.display = 'none';
+  }
+
+  function setRefreshBtnLoading(loading) {
+    const btn = document.getElementById('refresh-btn');
+    btn.disabled = loading;
+    btn.innerHTML = loading
+      ? '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Refreshing…'
+      : '<i class="bi bi-arrow-clockwise me-1"></i>Refresh';
+  }
+
+  // ── Live filter event listeners ────────────────────────────────────────────
+  document.getElementById('filter-flair').addEventListener('change', () => {
+    saveFiltersToStorage();
+    renderTable();
+  });
+  document.getElementById('filter-id').addEventListener('input', () => {
+    saveFiltersToStorage();
+    renderTable();
+  });
+  document.getElementById('filter-status').addEventListener('change', () => {
+    saveFiltersToStorage();
+    renderTable();
+  });
+
+  // ── Boot ───────────────────────────────────────────────────────────────────
+  loadFiltersFromStorage();
+  loadData();
+</script>
+</body>
+</html>
