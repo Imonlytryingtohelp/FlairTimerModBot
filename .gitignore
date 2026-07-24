@@ -19,6 +19,9 @@ ENV/
 *.swo
 *~
 
+#Tests
+/tests/
+
 # Bot data
 config/posts.json
 docker-config/

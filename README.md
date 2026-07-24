@@ -1,6 +1,9 @@
 
 # Flair Timer Mod Bot
 
+[![Version](https://img.shields.io/badge/version-1.8.0-blue.svg)](https://github.com/imonlytryingtohelp/FlairTimerModBot)
+[![Docker Image](https://img.shields.io/badge/docker-ghcr.io%2Fimonlytryingtohelp%2Fflairtimermodbot%3A1.8.0-blue?logo=docker)](https://github.com/imonlytryingtohelp/FlairTimerModBot/pkgs/container/flairtimermodbot)
+
 A unified Reddit bot that monitors a subreddit for posts with specific link flairs. When a post maintains a flair for a configured duration, the bot can:
 
 1. **Post a comment** - Leave a configured message with optional:
@@ -29,6 +32,11 @@ This bot combines the functionality of FlairTimerComment and FlairTimerModMail i
   - Bot automatically verifies sender is a moderator
   - Receives confirmation reply with status
   - Old messages are not reprocessed on restart (prevents spam)
+- **Manual Post Tracking via Modmail**: Moderators can trigger tracking for specific posts directly from modmail
+  - Send `track-post <postid>` for a single post
+  - Or send `track-post <postid1> <postid2> <postid3>` for multiple posts
+  - The bot checks the current flair of each post and starts tracking it if it matches a configured flair
+  - The bot replies with confirmation for tracked posts and any that could not be tracked
 - **Optimized for Rate Limiting**: Minimal API requests
   - Scans new posts only once per cycle (regardless of flair configs)
   - Caches submissions to check against all flairs without re-fetching
@@ -217,6 +225,21 @@ Moderators can reload the flair timer configurations from the wiki without resta
 Example:
 - Send modmail to `/r/yoursubreddit` with body: `reload-flairtimers`
 - Bot replies: `✅ Successfully reloaded flair timer configs from wiki. Loaded 5 configurations.`
+
+---
+
+## Manual Post Tracking (via Modmail)
+
+Starting in version 1.8.0, moderators can manually tell the bot to track specific posts without waiting for them to appear in the normal scan window.
+
+How to use it:
+1. Send a modmail to the subreddit with a command like `track-post 1uvtrew`
+2. For multiple posts, use `track-post 1uvtrew abc123 def456`
+3. The bot checks each post's current flair
+4. If the post already has one of the configured flairs, the bot starts tracking it immediately
+5. The bot replies with a confirmation message listing which posts were tracked and any that could not be tracked
+
+This is useful for manually adding posts that were missed by the regular scan or for one-off moderation cases.
 
 ---
 

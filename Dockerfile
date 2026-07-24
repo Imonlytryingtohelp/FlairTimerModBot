@@ -5,6 +5,7 @@ WORKDIR /app
 COPY flairtimermodbot.py .
 COPY update_checker.py .
 COPY requirements.txt .
+COPY manual_tracking.py .
 
 RUN mkdir -p /app/config
 

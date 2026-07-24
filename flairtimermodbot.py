@@ -8,12 +8,13 @@ import yaml
 import threading
 from prawcore.exceptions import ResponseException
 from update_checker import start_update_checker
+from manual_tracking import apply_manual_tracking, extract_post_ids
 
 # ============================================
 # BOT CONFIGURATION
 # ============================================
 BOT_NAME = "FlairTimerModBot"
-BOT_VERSION = "1.7.0"
+BOT_VERSION = "1.8.0"
 WIKI_PAGE = os.environ.get("FTMB_WIKI_PAGE", "flair-timers")  # Wiki page with flair timer configs
 USE_WIKI_CONFIG = os.environ.get("FTMB_USE_WIKI_CONFIG", "true").lower() == "true"
 # ============================================
@@ -122,8 +123,8 @@ flair_times_fallback = getattr(flairconfig, "flair_times", [])
 flair_times = []  # Will be populated after authentication
 
 
-def chat_message_watcher(reddit, subreddit_name, startup_timestamp):
-    """Monitor modmail for reload-flairtimers command from moderators.
+def chat_message_watcher(reddit, subreddit_name, startup_timestamp, all_posts):
+    """Monitor modmail for reload-flairtimers and manual tracking commands from moderators.
     
     Only processes messages created after bot startup to prevent reprocessing on restart.
     """
@@ -161,8 +162,11 @@ def chat_message_watcher(reddit, subreddit_name, startup_timestamp):
                 with open(chat_requests_file, 'a') as f:
                     f.write(message.id + '\n')
                 
+                body = getattr(message, 'body', '') or ''
+                body_lower = body.lower()
+
                 # Check for reload-flairtimers command
-                if hasattr(message, 'body') and 'reload-flairtimers' in message.body.lower():
+                if body_lower and 'reload-flairtimers' in body_lower:
                     author = getattr(message, 'author', None)
                     
                     # Verify moderator
@@ -184,6 +188,28 @@ def chat_message_watcher(reddit, subreddit_name, startup_timestamp):
                             message.reply(reply_text)
                         except Exception as e:
                             print(f"[CHAT_WATCHER] Error replying to message: {e}")
+                else:
+                    post_ids = extract_post_ids(body)
+                    if post_ids:
+                        author = getattr(message, 'author', None)
+                        if author and author in reddit.subreddit(subreddit_name).moderator():
+                            print(f"[CHAT_WATCHER] Manual tracking request from moderator {author}: {post_ids}")
+                            tracked_ids, skipped_ids = apply_manual_tracking(reddit, post_ids, flair_times, all_posts)
+
+                            if tracked_ids:
+                                tracked_text = ", ".join(tracked_ids)
+                                reply_text = f"✅ Started tracking {len(tracked_ids)} post(s): {tracked_text}"
+                            else:
+                                reply_text = "⚠️ No matching configured flair was found for the supplied post ID(s)."
+
+                            if skipped_ids:
+                                skipped_text = ", ".join(skipped_ids)
+                                reply_text += f" I could not track: {skipped_text}."
+
+                            try:
+                                message.reply(reply_text)
+                            except Exception as e:
+                                print(f"[CHAT_WATCHER] Error replying to message: {e}")
         except Exception as e:
             print(f"[CHAT_WATCHER] Error in watcher loop: {e}")
             time.sleep(30)
@@ -503,10 +529,13 @@ if not flair_times:
 # Write active config to cache so the dashboard webapp always shows the live values
 save_flair_times_cache(flair_times)
 
+# Load posts once so the watcher and the main loop share state
+posts = load_posts()
+
 # Start chat message watcher in background thread with startup timestamp
 chat_watcher_thread = threading.Thread(
     target=chat_message_watcher,
-    args=(reddit, config.subreddit, startup_timestamp),
+    args=(reddit, config.subreddit, startup_timestamp, posts),
     daemon=True
 )
 chat_watcher_thread.start()
@@ -517,7 +546,6 @@ start_update_checker(reddit, config.subreddit, BOT_NAME, BOT_VERSION)
 # Main bot loop
 while True:
     try:
-        posts = load_posts()
         main(reddit=reddit, all_posts=posts)
     except ResponseException as e:
         if e.response.status_code == 429:

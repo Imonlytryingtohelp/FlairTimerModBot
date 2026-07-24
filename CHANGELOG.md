@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.0] - 2026-07-24
+
+### Added
+- **Manual Post Tracking via Modmail**: Moderators can now trigger tracking by sending a modmail with one or more post IDs
+  - Supports single post IDs or multiple IDs in one message
+  - Example format: `track-post 1uvtrew` or `track-post 1uvtrew abc123 def456`
+  - If a supplied post currently has a configured flair, the bot starts tracking it immediately
+  - The bot replies to the modmail to confirm which posts were tracked and which could not be tracked
+
+
+
 ## [1.7.0] - 2026-03-18
 
 ### Added
