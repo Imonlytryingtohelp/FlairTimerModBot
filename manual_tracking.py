@@ -4,8 +4,8 @@ import re
 def extract_post_ids(text):
     """Extract Reddit-style post IDs from modmail text.
 
-    Accepts either a single ID or multiple IDs separated by whitespace.
-    The bot should only treat values that look like short Reddit-style IDs.
+    Manual tracking should only trigger when the message explicitly contains a
+    tracking command and at least one valid post ID.
     """
     if not text:
         return []
@@ -17,18 +17,12 @@ def extract_post_ids(text):
     command_keywords = ["track-post", "track post", "manual-track"]
     has_command = any(keyword in normalized for keyword in command_keywords)
 
+    if not has_command:
+        return []
+
     parts = re.split(r"\s+", normalized)
     ids = [part for part in parts if re.fullmatch(r"[a-z0-9]{3,10}", part)]
-
-    if has_command:
-        return ids
-
-    if len(ids) == 1:
-        return ids
-
-    # If the message contains multiple short tokens but no command, only treat the
-    # last token as the ID when it looks like an ID and the earlier words are not.
-    return [ids[-1]] if ids else []
+    return ids
 
 
 def apply_manual_tracking(reddit, post_ids, flair_times, all_posts):

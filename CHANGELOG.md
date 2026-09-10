@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.1] - 2026-09-10
+
+- Chat messages containing a post ID, but no "track-post" command, are no longer actioned. 
+
 ## [1.8.0] - 2026-07-24
 
 ### Added

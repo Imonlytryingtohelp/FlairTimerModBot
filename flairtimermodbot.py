@@ -14,7 +14,7 @@ from manual_tracking import apply_manual_tracking, extract_post_ids
 # BOT CONFIGURATION
 # ============================================
 BOT_NAME = "FlairTimerModBot"
-BOT_VERSION = "1.8.0"
+BOT_VERSION = "1.8.1"
 WIKI_PAGE = os.environ.get("FTMB_WIKI_PAGE", "flair-timers")  # Wiki page with flair timer configs
 USE_WIKI_CONFIG = os.environ.get("FTMB_USE_WIKI_CONFIG", "true").lower() == "true"
 # ============================================
@@ -177,7 +177,6 @@ def chat_message_watcher(reddit, subreddit_name, startup_timestamp, all_posts):
                         new_flair_times = load_flair_times_from_wiki(reddit, subreddit_name)
                         if new_flair_times:
                             flair_times = new_flair_times
-                            save_flair_times_cache(flair_times)
                             reply_text = f"✅ Successfully reloaded flair timer configs from wiki. Loaded {len(flair_times)} configurations."
                             print("[CHAT_WATCHER] Config reloaded successfully")
                         else:
@@ -213,22 +212,6 @@ def chat_message_watcher(reddit, subreddit_name, startup_timestamp, all_posts):
         except Exception as e:
             print(f"[CHAT_WATCHER] Error in watcher loop: {e}")
             time.sleep(30)
-
-
-def save_flair_times_cache(flair_times_list):
-    """Write the active flair_times to a JSON cache for the dashboard webapp.
-    
-    Called every time flair_times is loaded or reloaded so the webapp always
-    reflects the exact config the bot is currently using.
-    """
-    cache_path = os.path.join('config', 'flair_times_cache.json')
-    try:
-        os.makedirs('config', exist_ok=True)
-        with open(cache_path, 'w') as f:
-            json.dump(flair_times_list, f, indent=2)
-        print(f"[CACHE] Saved {len(flair_times_list)} flair timer configs to {cache_path}")
-    except Exception as e:
-        print(f"[CACHE] Error saving flair times cache: {e}")
 
 
 def send_modmail_with_backoff(reddit, subreddit_name, subject, message, max_retries=4):
@@ -525,9 +508,6 @@ else:
 if not flair_times:
     print("[ERROR] No flair timer configs loaded. Bot cannot continue.")
     exit(1)
-
-# Write active config to cache so the dashboard webapp always shows the live values
-save_flair_times_cache(flair_times)
 
 # Load posts once so the watcher and the main loop share state
 posts = load_posts()
