@@ -14,7 +14,7 @@ from manual_tracking import apply_manual_tracking, extract_post_ids
 # BOT CONFIGURATION
 # ============================================
 BOT_NAME = "FlairTimerModBot"
-BOT_VERSION = "1.8.1"
+BOT_VERSION = "1.8.3"
 WIKI_PAGE = os.environ.get("FTMB_WIKI_PAGE", "flair-timers")  # Wiki page with flair timer configs
 USE_WIKI_CONFIG = os.environ.get("FTMB_USE_WIKI_CONFIG", "true").lower() == "true"
 # ============================================
@@ -418,7 +418,7 @@ def main(reddit, all_posts: dict):
                 # Handle modmail action
                 if action in ["modmail", "both"]:
                     try:
-                        message = f"It has been {hours/24} day/s since this was flaired [{flair_text}](https://old.reddit.com{subm.permalink})"
+                        message = f"It has been {hours/24} day/s since this was flaired [{flair_text}](https://reddit.com{subm.permalink})"
                         send_modmail_with_backoff(reddit, config.subreddit, messagetitle, message)
                         print(f"Post {submission_id} has been flaired {flair_text} for {hours} hours, sent modmail")
                         # Longer sleep after modmail to avoid rate limiting (Reddit is strict with modmail)

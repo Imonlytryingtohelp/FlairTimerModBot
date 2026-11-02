@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.3] - 2026-11-02
+
+- Updated message links to  use reddit.com instead of old.reddit/sh.reddit 
+
+## [1.8.2] - 2026-11-02
+
+- Updated message links to  use sh.reddit instead of old.reddit
+
+
 ## [1.8.1] - 2026-09-10
 
 - Chat messages containing a post ID, but no "track-post" command, are no longer actioned. 
